@@ -1,0 +1,118 @@
+import java.sql.*;
+
+public class InventoryManagement {
+    static final String DB_URL = "jdbc:postgresql://localhost:5432/Inventory_Management";
+    static final String USER = "postgres";
+    static final String PASS = "0509";
+
+    public static void main(String[] args) {
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS)) {
+            System.out.println("Подключение к базе данных выполнено!");
+
+            // Добавление данных
+            addProduct(conn, "Monitor", 300.00);
+            addSupplier(conn, "DisplayWorld", "support@displayworld.com");
+            addInventory(conn, 4, 3, 20);
+
+            // Просмотр данных
+            viewProducts(conn);
+            viewSuppliers(conn);
+            viewInventory(conn);
+
+            // Обновление данных
+            updateInventory(conn, 1, 80);
+
+            // Удаление данных
+            deleteProduct(conn, 2);
+
+            // Проверка после обновления и удаления
+            viewInventory(conn);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void addProduct(Connection conn, String name, double price) throws SQLException {
+        String sql = "INSERT INTO \"Product\" (product_name, price) VALUES (?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            pstmt.setDouble(2, price);
+            pstmt.executeUpdate();
+            System.out.println("Товар добавлен: " + name);
+        }
+    }
+
+    public static void addSupplier(Connection conn, String name, String contactInfo) throws SQLException {
+        String sql = "INSERT INTO \"Supplier\" (supplier_name, contact_info) VALUES (?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            pstmt.setString(2, contactInfo);
+            pstmt.executeUpdate();
+            System.out.println("Поставщик добавлен: " + name);
+        }
+    }
+
+    public static void addInventory(Connection conn, int productId, int supplierId, int quantity) throws SQLException {
+        String sql = "INSERT INTO \"Inventory\" (product_id, supplier_id, quantity) VALUES (?, ?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, productId);
+            pstmt.setInt(2, supplierId);
+            pstmt.setInt(3, quantity);
+            pstmt.executeUpdate();
+            System.out.println("Инвентарь добавлен для продукта ID: " + productId);
+        }
+    }
+
+    public static void viewProducts(Connection conn) throws SQLException {
+        String sql = "SELECT * FROM \"Product\"";
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            System.out.println("Товары:");
+            while (rs.next()) {
+                System.out.printf("ID: %d, Название: %s, Цена: %.2f%n",
+                        rs.getInt("product_id"), rs.getString("product_name"), rs.getDouble("price"));
+            }
+        }
+    }
+
+    public static void viewSuppliers(Connection conn) throws SQLException {
+        String sql = "SELECT * FROM \"Supplier\"";
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            System.out.println("Поставщики:");
+            while (rs.next()) {
+                System.out.printf("ID: %d, Название: %s, Контакт: %s%n",
+                        rs.getInt("supplier_id"), rs.getString("supplier_name"), rs.getString("contact_info"));
+            }
+        }
+    }
+
+    public static void viewInventory(Connection conn) throws SQLException {
+        String sql = "SELECT * FROM \"Inventory\"";
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            System.out.println("Инвентарь:");
+            while (rs.next()) {
+                System.out.printf("ID: %d, Продукт ID: %d, Поставщик ID: %d, Количество: %d, Последнее обновление: %s%n",
+                        rs.getInt("inventory_id"), rs.getInt("product_id"), rs.getInt("supplier_id"),
+                        rs.getInt("quantity"), rs.getTimestamp("last_updated"));
+            }
+        }
+    }
+
+    public static void updateInventory(Connection conn, int inventoryId, int newQuantity) throws SQLException {
+        String sql = "UPDATE \"Inventory\" SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE inventory_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, newQuantity);
+            pstmt.setInt(2, inventoryId);
+            pstmt.executeUpdate();
+            System.out.println("Инвентарь обновлен для ID: " + inventoryId);
+        }
+    }
+
+    public static void deleteProduct(Connection conn, int productId) throws SQLException {
+        String sql = "DELETE FROM \"Product\" WHERE product_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, productId);
+            pstmt.executeUpdate();
+            System.out.println("Товар удален с ID: " + productId);
+        }
+    }
+}
